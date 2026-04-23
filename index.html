@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NextGen Network Academy — Automate Your Network. Own Your Ops.</title>
+  <meta name="description" content="Real-world Arista AVD workflows, working lab configs, and step-by-step guides — built by a practitioner, for engineers who actually ship things.">
+  <meta property="og:title" content="NextGen Network Academy">
+  <meta property="og:description" content="Network automation labs, AVD workflows, GitOps for network engineers.">
+  <meta property="og:url" content="https://nextgennetworkacademy.com">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:   #39ff14;
+      --orange:  #ff6b35;
+      --cyan:    #00d4ff;
+      --purple:  #b06eff;
+      --bg:      #0a0a0f;
+      --bg2:     #0d0d14;
+      --bg3:     #050508;
+      --border:  #1a1a2e;
+      --text:    #e8e8e8;
+      --muted:   #555;
+      --font-pixel: 'Press Start 2P', monospace;
+      --font-mono:  'Share Tech Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    /* scanline overlay */
+    body::before {
+      content: '';
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* grid background */
+    body::after {
+      content: '';
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background-image:
+        linear-gradient(rgba(57,255,20,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(57,255,20,0.025) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes blink    { 0%,100%{opacity:1} 50%{opacity:0} }
+    @keyframes glitch {
+      0%,89%,100% { transform: translateX(0); clip-path: none; }
+      90% { transform: translateX(-3px); clip-path: inset(10% 0 80% 0); }
+      92% { transform: translateX(3px);  clip-path: inset(60% 0 20% 0); }
+      94% { transform: translateX(-2px); clip-path: inset(40% 0 40% 0); }
+      96% { transform: translateX(0);    clip-path: none; }
+    }
+    @keyframes float   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+    @keyframes fadeUp  { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes march   { to { stroke-dashoffset: -16; } }
+    @keyframes scanbeam {
+      0%   { top: -4px; opacity: 0.6; }
+      100% { top: 100%; opacity: 0; }
+    }
+    @keyframes typing  { from{width:0} to{width:100%} }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0;
+      background: rgba(10,10,15,0.96);
+      backdrop-filter: blur(4px);
+      border-bottom: 2px solid var(--green);
+      padding: 14px 40px;
+      display: flex; align-items: center; justify-content: space-between;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex; flex-direction: column; gap: 4px;
+      text-decoration: none;
+    }
+    .logo-mark {
+      font-family: var(--font-pixel);
+      font-size: 12px;
+      color: var(--green);
+      animation: glitch 10s infinite;
+      letter-spacing: 2px;
+    }
+    .logo-domain {
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    .nav-links {
+      display: flex; gap: 28px; align-items: center;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 11px;
+      color: #888;
+      text-decoration: none;
+      letter-spacing: 1px;
+      transition: color .15s;
+      font-family: var(--font-mono);
+    }
+    .nav-links a:hover,
+    .nav-links a.active { color: var(--green); }
+    .nav-links a::before { content: '[ '; }
+    .nav-links a::after  { content: ' ]'; }
+
+    .nav-cta {
+      font-family: var(--font-pixel);
+      font-size: 8px;
+      color: var(--orange);
+      border: 1px solid var(--orange);
+      padding: 8px 12px;
+      text-decoration: none;
+      letter-spacing: 1px;
+      animation: blink 1.2s infinite;
+      transition: background .15s, animation 0s;
+    }
+    .nav-cta:hover {
+      background: rgba(255,107,53,0.1);
+      animation: none;
+      opacity: 1;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      padding: 80px 40px 64px;
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .scan-beam {
+      position: absolute; left: 0; right: 0; height: 4px;
+      background: linear-gradient(90deg, transparent, rgba(57,255,20,0.15), transparent);
+      animation: scanbeam 6s linear infinite;
+      pointer-events: none;
+    }
+
+    .hero-eyebrow {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      animation: fadeUp .6s ease both;
+    }
+
+    .hero-title {
+      font-family: var(--font-pixel);
+      font-size: clamp(14px, 2.5vw, 22px);
+      line-height: 2;
+      margin-bottom: 24px;
+      animation: fadeUp .7s .1s ease both;
+    }
+    .hero-title .g { color: var(--green); }
+    .hero-title .o { color: var(--orange); }
+    .hero-title .c { color: var(--cyan); }
+
+    .hero-sub {
+      font-size: 13px;
+      color: #999;
+      max-width: 580px;
+      line-height: 1.9;
+      margin-bottom: 36px;
+      animation: fadeUp .7s .2s ease both;
+    }
+
+    .hero-ctas {
+      display: flex; gap: 16px; flex-wrap: wrap;
+      animation: fadeUp .7s .3s ease both;
+    }
+
+    .btn-primary {
+      font-family: var(--font-pixel);
+      font-size: 9px;
+      background: var(--green);
+      color: var(--bg);
+      border: none;
+      padding: 14px 20px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      text-decoration: none;
+      display: inline-block;
+      transition: transform .1s, box-shadow .1s;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 0 rgba(57,255,20,0.3);
+    }
+    .btn-primary:active { transform: translateY(0); box-shadow: none; }
+
+    .btn-secondary {
+      font-family: var(--font-pixel);
+      font-size: 9px;
+      background: transparent;
+      color: var(--green);
+      border: 1px solid var(--green);
+      padding: 13px 20px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      text-decoration: none;
+      display: inline-block;
+      transition: background .15s;
+    }
+    .btn-secondary:hover { background: rgba(57,255,20,0.07); }
+
+    /* ── STATUS BAR ── */
+    .status-bar {
+      display: flex; gap: 0; overflow: hidden;
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      z-index: 1; position: relative;
+    }
+    .status-item {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      padding: 10px 20px;
+      border-right: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .status-item span.g { color: var(--green); }
+    .status-item span.o { color: var(--orange); }
+    .status-item span.c { color: var(--cyan); }
+
+    /* ── SECTIONS ── */
+    section {
+      position: relative; z-index: 1;
+      padding: 40px 40px 32px;
+    }
+
+    .section-label {
+      font-size: 9px;
+      color: var(--green);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1; height: 1px;
+      background: var(--border);
+    }
+
+    /* ── CONTENT CARDS ── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      padding: 20px;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+      transition: border-color .15s, background .15s, transform .15s;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    }
+    .card.green::before  { background: var(--green); }
+    .card.orange::before { background: var(--orange); }
+    .card.cyan::before   { background: var(--cyan); }
+    .card.purple::before { background: var(--purple); }
+
+    .card:hover {
+      border-color: var(--green);
+      background: #0f0f1a;
+      transform: translateY(-2px);
+    }
+    .card.orange:hover { border-color: var(--orange); }
+    .card.cyan:hover   { border-color: var(--cyan); }
+    .card.purple:hover { border-color: var(--purple); }
+
+    .card-tag {
+      display: inline-block;
+      font-size: 8px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      margin-bottom: 10px;
+      border: 1px solid;
+    }
+    .tag-green  { color: var(--green);  border-color: var(--green);  background: rgba(57,255,20,0.06); }
+    .tag-orange { color: var(--orange); border-color: var(--orange); background: rgba(255,107,53,0.06); }
+    .tag-cyan   { color: var(--cyan);   border-color: var(--cyan);   background: rgba(0,212,255,0.06); }
+    .tag-purple { color: var(--purple); border-color: var(--purple); background: rgba(176,110,255,0.06); }
+
+    .card-title {
+      font-size: 12px;
+      color: var(--text);
+      line-height: 1.7;
+      margin-bottom: 8px;
+      font-family: var(--font-mono);
+    }
+    .card-meta {
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+    .xp-bar {
+      height: 2px;
+      background: var(--border);
+      margin-top: 12px;
+    }
+    .xp-fill { height: 100%; }
+    .xp-green  { background: var(--green); }
+    .xp-orange { background: var(--orange); }
+    .xp-cyan   { background: var(--cyan); }
+    .xp-purple { background: var(--purple); }
+
+    /* ── TERMINAL ── */
+    .terminal {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--green);
+      padding: 20px 24px;
+      font-size: 12px;
+      line-height: 2.1;
+      position: relative;
+      overflow: hidden;
+    }
+    .terminal::before {
+      content: 'TERMINAL';
+      position: absolute; top: 8px; right: 12px;
+      font-size: 8px; color: var(--muted);
+      letter-spacing: 2px;
+    }
+    .t-prompt  { color: var(--green); user-select: none; }
+    .t-cmd     { color: var(--text); }
+    .t-out     { color: var(--muted); }
+    .t-hi      { color: var(--cyan); }
+    .t-warn    { color: var(--orange); }
+    .t-cursor  {
+      display: inline-block;
+      width: 9px; height: 14px;
+      background: var(--green);
+      vertical-align: middle;
+      margin-left: 2px;
+      animation: blink .8s infinite;
+    }
+
+    /* ── TRACKS ── */
+    .tracks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+    }
+
+    .track {
+      border: 1px solid var(--border);
+      background: var(--bg2);
+      padding: 20px 16px;
+      text-align: center;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+      transition: all .15s;
+    }
+    .track:hover {
+      border-color: var(--green);
+      transform: translateY(-3px);
+    }
+
+    .track-icon {
+      font-size: 24px;
+      display: block;
+      margin-bottom: 10px;
+      animation: float 3s ease-in-out infinite;
+    }
+    .track:nth-child(2) .track-icon { animation-delay: .5s; }
+    .track:nth-child(3) .track-icon { animation-delay: 1s; }
+    .track:nth-child(4) .track-icon { animation-delay: 1.5s; }
+
+    .track-name {
+      font-family: var(--font-pixel);
+      font-size: 8px;
+      color: var(--text);
+      line-height: 1.8;
+      margin-bottom: 8px;
+    }
+    .track-desc {
+      font-size: 10px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+    .track-level { font-size: 9px; letter-spacing: 1px; }
+
+    /* ── ABOUT STRIP ── */
+    .about-strip {
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 36px 40px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 32px;
+      align-items: start;
+      position: relative; z-index: 1;
+    }
+
+    .avatar {
+      width: 80px; height: 80px;
+      border: 2px solid var(--green);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-pixel);
+      font-size: 18px;
+      color: var(--green);
+      flex-shrink: 0;
+    }
+
+    .about-name {
+      font-family: var(--font-pixel);
+      font-size: 11px;
+      color: var(--green);
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+    .about-title {
+      font-size: 10px;
+      color: var(--orange);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .about-bio {
+      font-size: 12px;
+      color: #999;
+      line-height: 1.9;
+      max-width: 560px;
+    }
+    .about-links {
+      display: flex; gap: 16px; margin-top: 16px; flex-wrap: wrap;
+    }
+    .about-link {
+      font-size: 10px;
+      color: var(--cyan);
+      text-decoration: none;
+      letter-spacing: 1px;
+      border-bottom: 1px solid rgba(0,212,255,0.3);
+      transition: border-color .15s;
+    }
+    .about-link:hover { border-color: var(--cyan); }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 9px;
+      color: var(--muted);
+      position: relative; z-index: 1;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .hiscore {
+      font-family: var(--font-pixel);
+      font-size: 7px;
+      color: var(--green);
+      letter-spacing: 2px;
+    }
+
+    .footer-links {
+      display: flex; gap: 20px;
+    }
+    .footer-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 9px;
+      letter-spacing: 1px;
+      transition: color .15s;
+    }
+    .footer-links a:hover { color: var(--green); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      nav { padding: 12px 20px; }
+      .nav-links { display: none; }
+      .hero { padding: 48px 20px 40px; }
+      section { padding: 32px 20px; }
+      .about-strip { grid-template-columns: 1fr; padding: 28px 20px; }
+      footer { padding: 16px 20px; }
+      .status-bar { overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a href="/" class="logo">
+      <span class="logo-mark">NGNA</span>
+      <span class="logo-domain">nextgennetworkacademy.com</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="/learn/" class="active">learn</a></li>
+      <li><a href="/labs/">labs</a></li>
+      <li><a href="#about">about</a></li>
+    </ul>
+    <a href="/learn/" class="nav-cta">START FREE</a>
+  </nav>
+
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <div class="status-item">PLAYER: <span class="g">NICK D'AMBROSIO</span></div>
+    <div class="status-item">ROLE: <span class="o">ADVISORY SYSTEMS ENGINEER</span></div>
+    <div class="status-item">STACK: <span class="c">AVD · EOS · CVaaS · ANSIBLE</span></div>
+    <div class="status-item">MODE: <span class="g">EDUCATOR</span></div>
+    <div class="status-item">PLATFORM: <span class="g">GITHUB PAGES</span></div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="scan-beam"></div>
+    <p class="hero-eyebrow">// netops · gitops · aiops · all-the-ops</p>
+    <h1 class="hero-title">
+      AUTOMATE YOUR<br>
+      <span class="g">NETWORK.</span><br>
+      <span class="o">OWN</span> <span class="c">YOUR OPS.</span>
+    </h1>
+    <p class="hero-sub">
+      Real-world Arista AVD workflows, working lab configs, and step-by-step guides.
+      Built by a practitioner, for engineers who actually ship things.
+      No fluff. No slides. Just working code.
+    </p>
+    <div class="hero-ctas">
+      <a href="/learn/" class="btn-primary">START FREE LAB ↗</a>
+      <a href="#tracks" class="btn-secondary">VIEW TRACKS</a>
+    </div>
+  </div>
+
+  <!-- LATEST DROPS -->
+  <section>
+    <div class="section-label">// latest drops</div>
+    <div class="cards-grid">
+
+      <a href="/labs/avd-campus-tags/" class="card green">
+        <span class="card-tag tag-green">lab guide</span>
+        <div class="card-title">AVD + CloudVision campus tags — working lab</div>
+        <div class="card-meta">Apr 2026 · AVD · CVaaS · YAML · Ansible</div>
+        <div class="xp-bar"><div class="xp-fill xp-green" style="width:100%"></div></div>
+      </a>
+
+      <a href="/learn/cloudvision-static-studios/" class="card orange">
+        <span class="card-tag tag-orange">how-to</span>
+        <div class="card-title">Day-2 ops with CloudVision Quick Actions</div>
+        <div class="card-meta">Coming soon · CloudVision · Studios · Campus</div>
+        <div class="xp-bar"><div class="xp-fill xp-orange" style="width:35%"></div></div>
+      </a>
+
+      <a href="/learn/static-studio-manifests/" class="card cyan">
+        <span class="card-tag tag-cyan">deep dive</span>
+        <div class="card-title">Static Studio manifests — zero to deployed</div>
+        <div class="card-meta">Planned · AVD · EOS · Ansible · cv_deploy</div>
+        <div class="xp-bar"><div class="xp-fill xp-cyan" style="width:15%"></div></div>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- TERMINAL -->
+  <section style="padding-top: 0;">
+    <div class="terminal">
+      <div><span class="t-prompt">ngna@lab:~$</span> <span class="t-cmd">git clone https://github.com/nextgennetworkacademy/avd-campus-tags</span></div>
+      <div><span class="t-out">Cloning into 'avd-campus-tags'...</span></div>
+      <div><span class="t-out">remote: Enumerating objects: </span><span class="t-hi">147</span><span class="t-out">, done.</span></div>
+      <div><span class="t-prompt">ngna@lab:~$</span> <span class="t-cmd">ls avd-campus-tags/</span></div>
+      <div><span class="t-hi">README.md &nbsp;&nbsp; group_vars/ &nbsp;&nbsp; inventory/ &nbsp;&nbsp; playbooks/ &nbsp;&nbsp; configlets/ &nbsp;&nbsp; docs/</span></div>
+      <div><span class="t-prompt">ngna@lab:~$</span> <span class="t-warn">ansible-playbook playbooks/deploy_campus.yml --tags cv_tags</span></div>
+      <div><span class="t-out">PLAY [Deploy AVD Campus Fabric + CloudVision Tags] </span><span class="t-hi">***********************</span></div>
+      <div><span class="t-out">TASK [arista.avd.eos_designs] </span><span class="t-hi">ok: [SPINE1]</span></div>
+      <div><span class="t-out">TASK [arista.avd.cv_deploy] &nbsp;&nbsp;</span><span class="t-hi">ok: [SPINE1, IDF1, IDF2, IDF3]</span></div>
+      <div><span class="t-prompt">ngna@lab:~$</span> <span class="t-cursor"></span></div>
+    </div>
+  </section>
+
+  <!-- LEARNING TRACKS -->
+  <section id="tracks">
+    <div class="section-label">// learning tracks</div>
+    <div class="tracks-grid">
+
+      <a href="/learn/netops/" class="track">
+        <span class="track-icon">🔧</span>
+        <div class="track-name">NETOPS</div>
+        <div class="track-desc">EOS config, VLAN ops, Day-2 CloudVision workflows</div>
+        <div class="track-level" style="color:var(--green);">▓▓▓░░ INTERMEDIATE</div>
+        <div class="xp-bar" style="margin-top:10px"><div class="xp-fill xp-green" style="width:60%"></div></div>
+      </a>
+
+      <a href="/learn/gitops/" class="track">
+        <span class="track-icon">⚙️</span>
+        <div class="track-name">GITOPS</div>
+        <div class="track-desc">AVD, Ansible, Git workflows, CI/CD pipelines</div>
+        <div class="track-level" style="color:var(--orange);">▓▓▓▓░ ADVANCED</div>
+        <div class="xp-bar" style="margin-top:10px"><div class="xp-fill xp-orange" style="width:80%"></div></div>
+      </a>
+
+      <a href="/learn/aiops/" class="track">
+        <span class="track-icon">🤖</span>
+        <div class="track-name">AIOPS</div>
+        <div class="track-desc">Ask AVA, NetDL, AI-driven telemetry and insights</div>
+        <div class="track-level" style="color:var(--cyan);">▓▓░░░ BEGINNER</div>
+        <div class="xp-bar" style="margin-top:10px"><div class="xp-fill xp-cyan" style="width:30%"></div></div>
+      </a>
+
+      <a href="/learn/foundations/" class="track">
+        <span class="track-icon">📡</span>
+        <div class="track-name">FOUNDATIONS</div>
+        <div class="track-desc">EOS basics, CloudVision intro, Arista AVD 101</div>
+        <div class="track-level" style="color:var(--purple);">▓░░░░ STARTER</div>
+        <div class="xp-bar" style="margin-top:10px"><div class="xp-fill xp-purple" style="width:15%"></div></div>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <div class="about-strip" id="about">
+    <div class="avatar">ND</div>
+    <div>
+      <div class="about-name">NICK D'AMBROSIO</div>
+      <div class="about-title">Advisory Systems Engineer · Arista Networks</div>
+      <p class="about-bio">
+        Building real-world Arista AVD and CloudVision workflows since before it was cool.
+        I write about what actually works in production — campus fabrics, GitOps pipelines,
+        Day-2 ops, and the gaps in documentation that take hours to figure out the first time.
+        This site is where I share it so you don't have to.
+      </p>
+      <div class="about-links">
+        <a href="https://www.linkedin.com/in/nicholas-dambrosio-0381871a/" class="about-link" target="_blank" rel="noopener">LinkedIn ↗</a>
+        <a href="https://github.com/nextgennetworkacademy" class="about-link" target="_blank" rel="noopener">GitHub ↗</a>
+        <a href="https://arista-southwest-region.github.io/Newsletter/" class="about-link" target="_blank" rel="noopener">Arista Newsletter ↗</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <span>© 2026 nextgennetworkacademy.com — built by Nick D'Ambrosio</span>
+    <div class="footer-links">
+      <a href="/learn/">learn</a>
+      <a href="/labs/">labs</a>
+      <a href="https://github.com/nextgennetworkacademy" target="_blank" rel="noopener">github</a>
+      <a href="https://www.linkedin.com/in/nicholas-dambrosio-0381871a/" target="_blank" rel="noopener">linkedin</a>
+    </div>
+    <div class="hiscore">HI-SCORE: ALL-THE-OPS</div>
+  </footer>
+
+</body>
+</html>
