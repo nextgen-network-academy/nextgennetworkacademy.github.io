@@ -1,0 +1,8 @@
+services:
+  storefront:
+    image: nginx:alpine
+    container_name: ngna-storefront-qa
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/usr/share/nginx/html:ro
